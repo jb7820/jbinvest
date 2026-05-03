@@ -1,2 +1,1 @@
-# jbinvest
-Preco Justo Bazin - Analise Fundamentalista
+JBINVEST v5
