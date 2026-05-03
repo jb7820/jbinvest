@@ -1,62 +1,922 @@
--- TABELA DE MEMBROS
-CREATE TABLE membros (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  senha_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'membro',
-  ativo BOOLEAN DEFAULT true,
-  criado_em TIMESTAMP DEFAULT NOW(),
-  ultimo_login TIMESTAMP
-);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JBINVEST v5.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;font-size:13px;background:#0d0d1a;color:#e0e0e0;min-height:100vh}
+:root{--or:#e85d04;--tl:#00b4d8;--gn:#06d6a0;--rd:#ef476f;--yw:#ffd166;--pu:#8338ec;--b1:#12122a;--b2:#1a1a35;--bd:#2a2a4a}
+/* LOGIN */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0d0d1a,#1a1a35)}
+.lbox{background:#12122a;border:1px solid var(--or);border-radius:12px;padding:40px;width:380px;text-align:center}
+.llogo{font-size:36px;font-weight:900;color:var(--or);letter-spacing:3px;margin-bottom:4px}
+.lsub{color:#555;font-size:12px;margin-bottom:6px}
+.lbadge{background:#1a1a35;color:var(--tl);font-size:10px;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:22px}
+.lbox input{width:100%;background:#0d0d1a;border:1px solid var(--bd);color:#e0e0e0;padding:11px 14px;border-radius:6px;font-size:13px;margin-bottom:11px;outline:none;transition:.2s}
+.lbox input:focus{border-color:var(--or)}
+.lbtn{width:100%;background:var(--or);color:#fff;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.lbtn:hover{opacity:.88}
+.lerr{color:var(--rd);font-size:12px;margin-top:8px;min-height:16px}
+.ldemo{margin-top:16px;padding:10px;background:#0d0d1a;border-radius:6px;font-size:11px;color:#444;text-align:left;line-height:2}
+/* APP */
+#app-page{display:none}
+.hdr{background:var(--b1);border-bottom:2px solid var(--or);padding:7px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.logo{background:var(--or);color:#fff;font-weight:900;font-size:14px;padding:5px 12px;border-radius:6px;letter-spacing:2px}
+.htit{color:#fff;font-size:13px;font-weight:700}
+.hpar{display:flex;align-items:center;gap:4px;font-size:11px;color:#777}
+.hpar input{width:56px;background:#0f0f2a;border:1px solid var(--bd);color:var(--yw);padding:3px 5px;border-radius:4px;font-size:11px;font-weight:700;text-align:center}
+.btn{background:var(--or);color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700}
+.btn:hover{opacity:.85}
+.btn-sm{padding:3px 9px;font-size:11px}
+.btn-g{background:transparent;border:1px solid var(--bd);color:#888;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:11px}
+.btn-g:hover{border-color:var(--tl);color:var(--tl)}
+.btn-pu{background:var(--pu);color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700}
+.btn-pu:hover{opacity:.85}
+.upill{background:#1a1a35;border:1px solid var(--bd);padding:3px 10px;border-radius:20px;font-size:11px;color:#888;margin-left:auto}
+.upill span{color:var(--gn);font-weight:700}
+.bout{background:transparent;border:1px solid var(--rd);color:var(--rd);padding:3px 9px;border-radius:4px;cursor:pointer;font-size:11px}
+.bout:hover{background:var(--rd);color:#fff}
+/* TABS */
+.tabs{display:flex;background:var(--b1);border-bottom:1px solid var(--bd);padding:0 14px;position:sticky;top:50px;z-index:99;overflow-x:auto}
+.tab{padding:8px 13px;cursor:pointer;color:#555;border-bottom:3px solid transparent;font-size:12px;font-weight:600;white-space:nowrap;transition:.15s}
+.tab.active{color:var(--or);border-color:var(--or)}
+.tab:hover{color:#fff}
+.page{display:none;padding:12px 14px}
+.page.active{display:block}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:7px;margin-bottom:11px}
+.stat{background:var(--b1);border:1px solid var(--bd);border-radius:6px;padding:7px 10px}
+.sl{color:#555;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.sv{font-size:18px;font-weight:800;margin-top:2px}
+.gn{color:var(--gn)}.rd{color:var(--rd)}.or{color:var(--or)}.tl{color:var(--tl)}.yw{color:var(--yw)}.pu{color:var(--pu)}
+/* TABLE */
+.ctrl{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+.ctrl input,.ctrl select{background:var(--b1);border:1px solid var(--bd);color:#e0e0e0;padding:5px 8px;border-radius:4px;font-size:12px}
+.ctrl input{width:190px}
+.tw{overflow-x:auto;border-radius:6px;border:1px solid var(--bd);max-height:60vh}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+thead th{background:var(--b2);color:#bbb;padding:6px 8px;text-align:right;font-size:10px;font-weight:700;white-space:nowrap;position:sticky;top:0;z-index:2;border-bottom:2px solid var(--or)}
+thead th:first-child,thead th:nth-child(2){text-align:left}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.03)}
+tbody tr:hover{background:rgba(255,255,255,.04)}
+tbody td{padding:5px 8px;text-align:right;white-space:nowrap;font-size:12px}
+tbody td:first-child{text-align:left;font-weight:700;color:#fff}
+tbody td:nth-child(2){text-align:left;color:#777;font-size:11px}
+.badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700}
+.bc{background:rgba(6,214,160,.15);color:var(--gn);border:1px solid rgba(6,214,160,.3)}
+.bn{background:rgba(255,209,102,.1);color:var(--yw);border:1px solid rgba(255,209,102,.25)}
+.br{background:rgba(239,71,111,.1);color:var(--rd);border:1px solid rgba(239,71,111,.25)}
+.neg{color:var(--rd)}.pos{color:var(--gn)}
+.hlg{background:rgba(6,214,160,.04)}.hly{background:rgba(255,209,102,.03)}.hlr{background:rgba(239,71,111,.03)}
+/* CHARTS */
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin-bottom:12px}
+.cc{background:var(--b1);border:1px solid var(--bd);border-radius:8px;padding:12px}
+.cc h3{color:#777;font-size:10px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+/* CARTEIRA */
+.cart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:14px}
+.cart-card{background:var(--b1);border:1px solid var(--bd);border-radius:8px;padding:14px}
+.cart-card h3{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.cart-ativo{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.cart-ativo:last-child{border:none}
+.cat-tk{font-weight:700;color:#fff;width:58px;font-size:13px}
+.cat-seg{color:#666;font-size:10px;flex:1}
+.cat-dy{color:var(--tl);font-weight:700;font-size:12px;width:50px;text-align:right}
+.cat-status{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px}
+.cat-del{background:transparent;border:none;color:#444;cursor:pointer;font-size:14px;padding:0 4px}
+.cat-del:hover{color:var(--rd)}
+/* IA */
+.ia-box{background:var(--b1);border:1px solid var(--pu);border-radius:10px;padding:16px;margin-bottom:14px}
+.ia-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ia-icon{font-size:24px}
+.ia-title{color:var(--pu);font-weight:700;font-size:14px}
+.ia-sub{color:#555;font-size:11px}
+.ia-select{background:var(--b2);border:1px solid var(--bd);color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:12px;width:100%;margin-bottom:8px}
+.ia-result{background:#0d0d1a;border:1px solid var(--bd);border-radius:8px;padding:14px;margin-top:10px;font-size:12px;line-height:1.8;display:none}
+.ia-result.show{display:block}
+.ia-section{margin-bottom:12px}
+.ia-section-title{color:var(--pu);font-weight:700;font-size:12px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.ia-item{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:8px}
+.ia-item:last-child{border:none}
+.ia-label{color:#666;min-width:140px;font-size:11px}
+.ia-val{color:#e0e0e0}
+.ia-val.good{color:var(--gn)}
+.ia-val.warn{color:var(--yw)}
+.ia-val.bad{color:var(--rd)}
+.ia-loading{text-align:center;padding:20px;color:#555}
+.ia-dot{display:inline-block;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+/* IR */
+.ir-box{background:var(--b1);border:1px solid var(--yw);border-radius:10px;padding:16px;margin-bottom:14px}
+.ir-title{color:var(--yw);font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.ir-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.ir-field{display:flex;flex-direction:column;gap:4px}
+.ir-field label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.4px}
+.ir-field input{background:#0d0d1a;border:1px solid var(--bd);color:var(--yw);padding:8px 10px;border-radius:6px;font-size:13px;font-weight:700;outline:none}
+.ir-field input:focus{border-color:var(--yw)}
+.ir-result{background:#0d0d1a;border-radius:8px;padding:14px;margin-top:10px}
+.ir-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px}
+.ir-kpi-item{background:#1a1a35;border-radius:6px;padding:10px;text-align:center}
+.ir-kpi-l{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.3px}
+.ir-kpi-v{font-size:18px;font-weight:800;margin-top:3px}
+.ir-estrategia{margin-top:12px}
+.ir-e-title{color:var(--yw);font-weight:700;font-size:12px;margin-bottom:8px}
+.ir-e-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.ir-e-item:last-child{border:none}
+.ir-e-num{background:var(--yw);color:#000;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;flex-shrink:0;margin-top:1px}
+.ir-e-txt{color:#bbb;line-height:1.6}
+.ir-e-txt b{color:#fff}
+.ir-semaforo{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-weight:700;font-size:13px}
+.ir-verde{background:rgba(6,214,160,.12);border:1px solid rgba(6,214,160,.3);color:var(--gn)}
+.ir-amarelo{background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);color:var(--yw)}
+.ir-vermelho{background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.25);color:var(--rd)}
+/* FORM */
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:7px;max-width:880px}
+.ff{display:flex;flex-direction:column;gap:3px}
+.ff label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.3px}
+.ff input,.ff select{background:var(--b1);border:1px solid var(--bd);color:#e0e0e0;padding:5px 8px;border-radius:4px;font-size:12px;outline:none}
+.ff input:focus{border-color:var(--or)}
+.sec{font-size:11px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 7px;border-bottom:1px solid var(--bd);padding-bottom:3px}
+/* RANKING */
+.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.rc{background:var(--b1);border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.rh{padding:9px 12px;font-weight:700;font-size:11px;background:var(--b2)}
+.rr{display:flex;align-items:center;padding:5px 12px;border-bottom:1px solid rgba(255,255,255,.03);gap:7px}
+.rr:hover{background:rgba(255,255,255,.03)}
+.rn{color:#333;font-size:10px;width:16px}
+.rtk{font-weight:700;color:#fff;width:55px;font-size:11px}
+.rst{color:#666;font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv{font-weight:700;font-size:11px}
+</style>
+</head>
+<body>
 
--- TABELA DE CARTEIRAS
-CREATE TABLE carteiras (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  membro_id UUID REFERENCES membros(id),
-  ticker TEXT NOT NULL,
-  segmento TEXT,
-  quantidade NUMERIC NOT NULL,
-  preco_medio NUMERIC NOT NULL,
-  criado_em TIMESTAMP DEFAULT NOW(),
-  atualizado_em TIMESTAMP DEFAULT NOW()
-);
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="lbox">
+    <div class="llogo">JBINVEST</div>
+    <div class="lsub">Análise Fundamentalista B3</div>
+    <div class="lbadge">Método Bazin • IA • Planejamento IR</div>
+    <input type="text" id="lu" placeholder="Usuário" onkeydown="if(event.key==='Enter')login()">
+    <input type="password" id="lp" placeholder="Senha" onkeydown="if(event.key==='Enter')login()">
+    <button class="lbtn" onclick="login()">ENTRAR →</button>
+    <div class="lerr" id="lerr"></div>
+    <div class="ldemo"><b style="color:#666">Demo:</b><br>👤 admin / jbinvest2025<br>👤 membro1 / bazin123<br>👤 membro2 / invest456</div>
+  </div>
+</div>
 
--- TABELA DE HISTÓRICO
-CREATE TABLE historico (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  membro_id UUID REFERENCES membros(id),
-  ticker TEXT NOT NULL,
-  preco NUMERIC,
-  pj_bazin NUMERIC,
-  margem_bazin NUMERIC,
-  status TEXT,
-  dy NUMERIC,
-  data_snapshot TIMESTAMP DEFAULT NOW()
-);
+<!-- APP -->
+<div id="app-page">
+  <div class="hdr">
+    <div class="logo">JBINVEST</div>
+    <div class="htit">Preço Justo Bazin — B3 v5</div>
+    <div class="hpar">SELIC<input id="hs" type="number" step="0.25" value="13.75" onchange="recalc()">%</div>
+    <div class="hpar">MS<input id="hmb" type="number" step="1" value="20" onchange="recalc()">%</div>
+    <button class="btn btn-sm" onclick="carregarDados()">🔄</button>
+    <div class="upill">👤 <span id="unome"></span></div>
+    <button class="bout" onclick="logout()">Sair</button>
+  </div>
 
--- TABELA DE LEADS (captura de emails)
-CREATE TABLE leads (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT,
-  email TEXT UNIQUE NOT NULL,
-  origem TEXT DEFAULT 'site',
-  interesse TEXT,
-  convertido BOOLEAN DEFAULT false,
-  criado_em TIMESTAMP DEFAULT NOW()
-);
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
+    <div class="tab" onclick="showTab('tabela')">💹 Preço Justo</div>
+    <div class="tab" onclick="showTab('carteira')">💼 Minha Carteira</div>
+    <div class="tab" onclick="showTab('ia')">🤖 Análise IA</div>
+    <div class="tab" onclick="showTab('ir')">🏛️ Planejamento IR</div>
+    <div class="tab" onclick="showTab('ranking')">🏆 Ranking</div>
+  </div>
 
--- TABELA DE CONFIGURAÇÕES
-CREATE TABLE configuracoes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  membro_id UUID REFERENCES membros(id),
-  selic NUMERIC DEFAULT 13.75,
-  ms_bazin NUMERIC DEFAULT 20,
-  ms_selic NUMERIC DEFAULT 20,
-  atualizado_em TIMESTAMP DEFAULT NOW()
-);
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="page active">
+    <div id="stats-bar" class="stats"></div>
+    <div class="cg">
+      <div class="cc"><h3>Status dos Ativos</h3><div style="position:relative;height:180px"><canvas id="ch-status"></canvas></div></div>
+      <div class="cc"><h3>Setores — Oportunidades Bazin</h3><div style="position:relative;height:180px"><canvas id="ch-setor"></canvas></div></div>
+      <div class="cc"><h3>Top 10 — DY%</h3><div style="position:relative;height:180px"><canvas id="ch-dy"></canvas></div></div>
+      <div class="cc"><h3>Top 10 — Margem Bazin%</h3><div style="position:relative;height:180px"><canvas id="ch-mb"></canvas></div></div>
+    </div>
+    <div class="sec">Top 15 Oportunidades — Compra</div>
+    <div class="tw"><table>
+      <thead><tr><th style="text-align:left">Ativo</th><th style="text-align:left">Segmento</th><th>R$</th><th>PJ Bazin</th><th>% Bazin</th><th>Status</th><th>DY%</th><th>P/L</th><th>ROE%</th><th>Payout%</th></tr></thead>
+      <tbody id="tbody-top"></tbody>
+    </table></div>
+  </div>
 
--- Inserir admin padrão (senha: jbinvest2025)
-INSERT INTO membros (nome, email, senha_hash, role)
-VALUES ('Administrador', 'admin@jbinvest.com.br', 
-        crypt('jbinvest2025', gen_salt('bf')), 'admin');
+  <!-- PREÇO JUSTO -->
+  <div id="tab-tabela" class="page">
+    <div class="ctrl">
+      <input type="text" id="busca" placeholder="Buscar ticker, segmento..." oninput="renderTabela()">
+      <select id="fst" onchange="renderTabela()">
+        <option value="">Todos os status</option>
+        <option value="COMPRA">✅ Compra</option>
+        <option value="NEUTRO">⏸ Neutro</option>
+        <option value="CARO">❌ Caro</option>
+      </select>
+      <select id="fseg" onchange="renderTabela()"><option value="">Todos os segmentos</option></select>
+      <select id="ford" onchange="renderTabela()">
+        <option value="mb">Margem Bazin%</option>
+        <option value="dy">DY%</option>
+        <option value="pl">P/L</option>
+        <option value="pvp">P/VP</option>
+        <option value="tk">Ticker A-Z</option>
+      </select>
+      <span id="cnt" style="color:#444;font-size:11px"></span>
+      <button class="btn-g" onclick="exportCSV()" style="margin-left:auto">⬇ CSV</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr>
+        <th style="text-align:left">Ativo</th><th style="text-align:left">Segmento B3</th>
+        <th>R$</th><th>PJ Selic</th><th>% Selic</th><th>PJ Bazin</th><th>% Bazin</th><th>Status</th>
+        <th>DY%</th><th>P/L</th><th>DPA</th><th>CAGR%</th><th>ROE%</th><th>G%</th>
+        <th>Payout%</th><th>Dív/EBIT</th><th>VPA</th><th>LPA</th><th>P/VP</th><th>ROIC%</th><th>EV/EBIT</th><th>Liq.</th>
+        <th>+Cart.</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- CARTEIRA -->
+  <div id="tab-carteira" class="page">
+    <div class="sec">➕ Adicionar à Carteira</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+      <div class="ff"><label>Ticker</label>
+        <select id="cart-tk" style="background:var(--b1);border:1px solid var(--bd);color:#e0e0e0;padding:6px 8px;border-radius:4px;font-size:12px;width:140px">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="ff"><label>Qtd. Cotas</label><input id="cart-qt" type="number" step="1" min="1" placeholder="100" style="width:100px"></div>
+      <div class="ff"><label>Preço Médio R$</label><input id="cart-pm" type="number" step="0.01" placeholder="0.00" style="width:120px"></div>
+      <div class="ff"><label>&nbsp;</label><button class="btn" onclick="addCarteira()">Adicionar</button></div>
+      <div id="cart-msg" style="font-size:12px;align-self:flex-end"></div>
+    </div>
+
+    <div id="cart-vazia" style="color:#444;padding:30px;text-align:center;font-size:13px">
+      💼 Sua carteira está vazia. Adicione ativos acima ou clique em "+Cart." na tabela Preço Justo.
+    </div>
+
+    <div id="cart-conteudo" style="display:none">
+      <!-- KPIs Carteira -->
+      <div id="cart-stats" class="stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))"></div>
+
+      <!-- Gráficos -->
+      <div class="cg">
+        <div class="cc"><h3>Distribuição por Setor</h3><div style="position:relative;height:200px"><canvas id="ch-cart-setor"></canvas></div></div>
+        <div class="cc"><h3>DY% por Ativo</h3><div style="position:relative;height:200px"><canvas id="ch-cart-dy"></canvas></div></div>
+        <div class="cc"><h3>Peso por Ativo (%)</h3><div style="position:relative;height:200px"><canvas id="ch-cart-peso"></canvas></div></div>
+        <div class="cc"><h3>Dividendos Mensais Estimados (R$)</h3><div style="position:relative;height:200px"><canvas id="ch-cart-div"></canvas></div></div>
+      </div>
+
+      <!-- Tabela Carteira -->
+      <div class="sec">Ativos na Carteira</div>
+      <div class="tw"><table style="min-width:900px">
+        <thead><tr>
+          <th style="text-align:left">Ativo</th><th style="text-align:left">Segmento</th>
+          <th>Qtd.</th><th>P.Médio</th><th>Cotação</th><th>Var.%</th>
+          <th>Total Inv.</th><th>Total Atual</th><th>Lucro/Prej.</th>
+          <th>DY%</th><th>DPA</th><th>Div.Anual</th><th>Div.Mensal</th>
+          <th>PJ Bazin</th><th>% Bazin</th><th>Status</th><th>Ação</th>
+        </tr></thead>
+        <tbody id="tbody-cart"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- IA -->
+  <div id="tab-ia" class="page">
+    <div class="ia-box">
+      <div class="ia-header">
+        <div class="ia-icon">🤖</div>
+        <div>
+          <div class="ia-title">Análise IA — Estratégia Fundamentalista</div>
+          <div class="ia-sub">Análise completa com base no Método Bazin + Indicadores Fundamentalistas</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:200px">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">Selecionar Ativo para Análise</label>
+          <select id="ia-ativo" class="ia-select" style="margin:0">
+            <option value="">Selecione um ativo...</option>
+          </select>
+        </div>
+        <button class="btn-pu" onclick="analisarIA()" style="height:36px">🤖 Analisar com IA</button>
+        <button class="btn-g" onclick="analisarCarteira()" style="height:36px">💼 Analisar Carteira</button>
+      </div>
+      <div class="ia-result" id="ia-result"></div>
+    </div>
+
+    <!-- Estratégias Gerais -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px">
+      <div class="cc">
+        <h3>📋 Critérios Bazin</h3>
+        <div style="font-size:12px;line-height:2;color:#888">
+          <div>✅ <b style="color:#fff">DY ≥ 6%</b> — Dividend Yield mínimo</div>
+          <div>✅ <b style="color:#fff">PJ = DPA ÷ 6%</b> — Preço Justo</div>
+          <div>✅ <b style="color:#fff">MS ≥ 20%</b> — Margem de Segurança</div>
+          <div>✅ <b style="color:#fff">P/L entre 5-15</b> — Preço razoável</div>
+          <div>✅ <b style="color:#fff">Payout ≤ 80%</b> — Sustentável</div>
+          <div>✅ <b style="color:#fff">Dív/EBIT ≤ 3</b> — Baixo endividamento</div>
+          <div>✅ <b style="color:#fff">ROE ≥ 15%</b> — Retorno bom</div>
+        </div>
+      </div>
+      <div class="cc">
+        <h3>🎯 Estratégia de Entrada</h3>
+        <div style="font-size:12px;line-height:2;color:#888">
+          <div>🟢 <b style="color:var(--gn)">COMPRA</b> — Preço ≤ PJ × (1 - MS%)</div>
+          <div>🟡 <b style="color:var(--yw)">NEUTRO</b> — Preço entre PJ e MS</div>
+          <div>🔴 <b style="color:var(--rd)">CARO</b> — Preço > Preço Justo</div>
+          <div>📊 Diversifique em ≥ 5 setores</div>
+          <div>💰 Reinvista dividendos mensalmente</div>
+          <div>⏳ Horizonte mínimo: 3-5 anos</div>
+        </div>
+      </div>
+      <div class="cc">
+        <h3>⚠️ Sinais de Alerta</h3>
+        <div style="font-size:12px;line-height:2;color:#888">
+          <div>🚫 <b style="color:var(--rd)">DY > 20%</b> — Risco armadilha</div>
+          <div>🚫 <b style="color:var(--rd)">Payout > 100%</b> — Insustentável</div>
+          <div>🚫 <b style="color:var(--rd)">ROE negativo</b> — Prejuízo</div>
+          <div>🚫 <b style="color:var(--rd)">Dív/EBIT > 5</b> — Endividado</div>
+          <div>🚫 <b style="color:var(--rd)">P/L negativo</b> — Sem lucro</div>
+          <div>⚡ <b style="color:var(--yw)">Liquidez &lt; 500K</b> — Risco liquidez</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IR -->
+  <div id="tab-ir" class="page">
+    <div class="ir-box">
+      <div class="ir-title">🏛️ Planejamento Tributário — Estratégia para Não Pagar IR sobre Dividendos</div>
+      <div class="ir-grid">
+        <div class="ir-field"><label>Salário Anual Bruto (R$)</label><input id="ir-sal" type="number" step="1000" placeholder="0" oninput="calcIR()"></div>
+        <div class="ir-field"><label>Dividendos Anuais (R$)</label><input id="ir-div" type="number" step="1000" placeholder="0" oninput="calcIR()"></div>
+        <div class="ir-field"><label>Outros Rendimentos (R$)</label><input id="ir-out" type="number" step="1000" placeholder="0" oninput="calcIR()"></div>
+        <div class="ir-field"><label>IRRF Pago na Fonte (R$)</label><input id="ir-irrf" type="number" step="100" placeholder="0" oninput="calcIR()"></div>
+        <div class="ir-field"><label>Dividendos Alvo Mensal (R$)</label><input id="ir-alvo" type="number" step="100" placeholder="5000" oninput="calcIR()"></div>
+        <div class="ir-field"><label>Capital Disponível (R$)</label><input id="ir-cap" type="number" step="1000" placeholder="0" oninput="calcIR()"></div>
+      </div>
+      <button class="btn" onclick="calcIR()" style="background:var(--yw);color:#000">📊 Calcular Estratégia</button>
+    </div>
+    <div id="ir-result" style="display:none">
+      <div id="ir-semaforo"></div>
+      <div class="ir-kpi" id="ir-kpis"></div>
+      <div class="ir-estrategia">
+        <div class="ir-e-title">🎯 Estratégias para Minimizar/Zerar IR sobre Dividendos</div>
+        <div id="ir-estrategias"></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="ir-e-title">📊 Simulação de Crescimento Patrimonial</div>
+        <div class="cg" style="margin-top:8px">
+          <div class="cc"><h3>Dividendos vs. Limite Isento (Próximos 5 anos)</h3><div style="position:relative;height:200px"><canvas id="ch-ir-proj"></canvas></div></div>
+          <div class="cc"><h3>Composição da Renda Total</h3><div style="position:relative;height:200px"><canvas id="ch-ir-comp"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div id="tab-ranking" class="page">
+    <div class="rg" id="rank-grid"></div>
+  </div>
+</div>
+
+<script>
+// ═══ AUTH ═══
+var MEMBROS={admin:{senha:'jbinvest2025',nome:'Administrador',role:'admin'},membro1:{senha:'bazin123',nome:'João Silva',role:'membro'},membro2:{senha:'invest456',nome:'Maria Souza',role:'membro'}};
+var EU=null;
+var ATIVOS=[];
+var CARTEIRA=[];
+var CHS={};
+
+function login(){
+  var u=document.getElementById('lu').value.trim().toLowerCase();
+  var s=document.getElementById('lp').value;
+  var e=document.getElementById('lerr');
+  if(!MEMBROS[u]){e.textContent='Usuário não encontrado.';return}
+  if(MEMBROS[u].senha!==s){e.textContent='Senha incorreta.';return}
+  EU={user:u,...MEMBROS[u]};
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app-page').style.display='block';
+  document.getElementById('unome').textContent=EU.nome;
+  carregarDados();
+}
+function logout(){EU=null;document.getElementById('login-page').style.display='flex';document.getElementById('app-page').style.display='none';document.getElementById('lu').value='';document.getElementById('lp').value='';Object.values(CHS).forEach(function(c){try{c.destroy()}catch(e){}});CHS={};}
+
+// ═══ DADOS ═══
+function getSelic(){return parseFloat(document.getElementById('hs').value)||13.75}
+function getMSB(){return parseFloat(document.getElementById('hmb').value)||20}
+function getStatus(mb){if(mb===null||isNaN(mb))return'CARO';if(mb>=getMSB())return'COMPRA';if(mb>=0)return'NEUTRO';return'CARO'}
+function calcAtivo(a){
+  var pjb=a.dpa?a.dpa/0.06:0;
+  var pjs=a.dpa?a.dpa/(getSelic()/100):0;
+  var mb=pjb>0?((pjb-a.pr)/pjb)*100:null;
+  var ms=pjs>0?((pjs-a.pr)/pjs)*100:null;
+  a.pjb=pjb;a.pjs=pjs;a.mb=mb;a.ms=ms;a.status=getStatus(mb);
+  return a;
+}
+function recalc(){ATIVOS=ATIVOS.map(calcAtivo);renderTudo()}
+
+async function carregarDados(){
+  ATIVOS=getDadosBase().map(calcAtivo);
+  renderTudo();
+  popularSelects();
+}
+
+function renderTudo(){
+  renderStats();renderDash();renderTabela();renderRanking();
+  if(CARTEIRA.length>0)renderCarteira();
+}
+
+// ═══ STATS ═══
+function renderStats(){
+  var c=ATIVOS.filter(function(a){return a.status==='COMPRA'}).length;
+  var n=ATIVOS.filter(function(a){return a.status==='NEUTRO'}).length;
+  var r=ATIVOS.filter(function(a){return a.status==='CARO'}).length;
+  var dys=ATIVOS.filter(function(a){return a.dy>0}).map(function(a){return a.dy});
+  var avg=dys.length?(dys.reduce(function(s,v){return s+v},0)/dys.length).toFixed(2):'—';
+  document.getElementById('stats-bar').innerHTML=
+    st('Total',ATIVOS.length,'tl')+st('✅ Compra',c,'gn')+st('⏸ Neutro',n,'yw')+
+    st('❌ Caro',r,'rd')+st('DY Médio',avg+'%','tl')+
+    st('SELIC',getSelic()+'%','or')+st('MS Bazin',getMSB()+'%','or');
+}
+function st(l,v,c){return'<div class="stat"><div class="sl">'+l+'</div><div class="sv '+c+'">'+v+'</div></div>'}
+
+// ═══ DASHBOARD ═══
+function renderDash(){
+  var compra=ATIVOS.filter(function(a){return a.status==='COMPRA'}).sort(function(a,b){return(b.mb||0)-(a.mb||0)});
+  var COLS=['#00b4d8','#06d6a0','#ffd166','#e85d04','#ef476f','#8338ec','#3a86ff','#fb5607','#8ac926','#ff6b6b'];
+
+  document.getElementById('tbody-top').innerHTML=compra.slice(0,15).map(function(r){
+    return'<tr class="hlg"><td>'+r.tk+'</td><td>'+r.seg+'</td><td>R$ '+f(r.pr)+'</td><td>R$ '+f(r.pjb)+'</td>'+
+    '<td>'+fp(r.mb)+'</td><td><span class="badge bc">Compra</span></td>'+
+    '<td>'+fp(r.dy)+'</td><td>'+f(r.pl)+'</td><td>'+f(r.roe)+'%</td><td>'+f(r.payout)+'%</td></tr>';
+  }).join('');
+
+  dc('ch-status','doughnut',['Compra','Neutro','Caro'],[compra.length,ATIVOS.filter(function(a){return a.status==='NEUTRO'}).length,ATIVOS.filter(function(a){return a.status==='CARO'}).length],['#06d6a0','#ffd166','#ef476f']);
+
+  var sb={};compra.forEach(function(a){sb[a.seg]=(sb[a.seg]||0)+1});
+  var sdB=Object.entries(sb).sort(function(a,b){return b[1]-a[1]}).slice(0,9);
+  dc('ch-setor','doughnut',sdB.map(function(d){return d[0]}),sdB.map(function(d){return d[1]}),COLS);
+
+  var topDY=[...ATIVOS].filter(function(a){return a.dy>0}).sort(function(a,b){return b.dy-a.dy}).slice(0,10);
+  db('ch-dy',topDY.map(function(a){return a.tk}),topDY.map(function(a){return+a.dy.toFixed(2)}),'#00b4d8','DY%');
+
+  var topMB=compra.slice(0,10);
+  db('ch-mb',topMB.map(function(a){return a.tk}),topMB.map(function(a){return+a.mb.toFixed(2)}),'#06d6a0','% Bazin');
+}
+
+function dc(id,type,labels,data,colors){
+  if(CHS[id])try{CHS[id].destroy()}catch(e){}
+  CHS[id]=new Chart(document.getElementById(id),{type:type,
+    data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderWidth:1,borderColor:'#0d0d1a'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#aaa',font:{size:9},boxWidth:8}}}}});
+}
+function db(id,labels,data,color,lbl){
+  if(CHS[id])try{CHS[id].destroy()}catch(e){}
+  CHS[id]=new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:labels,datasets:[{label:lbl,data:data,backgroundColor:color,borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#888',callback:function(v){return v+'%'}},grid:{color:'#2a2a4a'}},y:{ticks:{color:'#fff',font:{weight:'bold',size:10}},grid:{display:false}}}}});
+}
+
+// ═══ TABELA ═══
+function renderTabela(){
+  var q=(document.getElementById('busca').value||'').toLowerCase();
+  var st2=document.getElementById('fst').value;
+  var sg=document.getElementById('fseg').value;
+  var or=document.getElementById('ford').value;
+  var rows=[...ATIVOS];
+  if(q) rows=rows.filter(function(r){return r.tk.toLowerCase().includes(q)||(r.seg||'').toLowerCase().includes(q)});
+  if(st2) rows=rows.filter(function(r){return r.status===st2});
+  if(sg) rows=rows.filter(function(r){return r.seg===sg});
+  rows.sort(function(a,b){if(or==='tk')return a.tk.localeCompare(b.tk);if(or==='mb')return(b.mb||0)-(a.mb||0);if(or==='dy')return(b.dy||0)-(a.dy||0);if(or==='pl')return(a.pl||999)-(b.pl||999);if(or==='pvp')return(a.pvp||999)-(b.pvp||999);return(b.mb||0)-(a.mb||0);});
+  var segs=[...new Set(ATIVOS.map(function(a){return a.seg||'Outros'}))].sort();
+  var sel=document.getElementById('fseg');var cur=sel.value;
+  sel.innerHTML='<option value="">Todos os segmentos</option>'+segs.map(function(s){return'<option value="'+s+'"'+(s===cur?' selected':'')+'>'+s+'</option>'}).join('');
+  document.getElementById('cnt').textContent=rows.length+' ativos';
+  document.getElementById('tbody').innerHTML=rows.map(function(r){
+    var rc=r.status==='COMPRA'?'hlg':r.status==='NEUTRO'?'hly':'hlr';
+    var bc=r.status==='COMPRA'?'bc':r.status==='NEUTRO'?'bn':'br';
+    var bl=r.status==='COMPRA'?'Compra':r.status==='NEUTRO'?'Neutro':'Caro';
+    return'<tr class="'+rc+'"><td>'+r.tk+'</td><td>'+r.seg+'</td>'+
+    '<td>R$ '+f(r.pr)+'</td><td>'+frs(r.pjs)+'</td><td>'+fp(r.ms)+'</td>'+
+    '<td>'+frs(r.pjb)+'</td><td>'+fp(r.mb)+'</td>'+
+    '<td><span class="badge '+bc+'">'+bl+'</span></td>'+
+    '<td>'+fp(r.dy)+'</td><td>'+f(r.pl)+'</td><td>R$ '+f(r.dpa)+'</td>'+
+    '<td>'+fp(r.cagr)+'</td><td>'+f(r.roe)+'%</td><td>'+fp(r.g)+'</td>'+
+    '<td>'+f(r.payout)+'%</td><td>'+f(r.divida)+'</td>'+
+    '<td>'+f(r.vpa)+'</td><td>'+f(r.lpa)+'</td><td>'+f(r.pvp)+'</td>'+
+    '<td>'+f(r.roic)+'%</td><td>'+f(r.evebit)+'</td><td>'+fl(r.liq)+'</td>'+
+    '<td><button class="btn-g" style="font-size:10px;padding:2px 6px" onclick="addCarteiraRapido(\''+r.tk+'\')">+</button></td></tr>';
+  }).join('');
+}
+
+// ═══ CARTEIRA ═══
+function popularSelects(){
+  var opts=ATIVOS.map(function(a){return'<option value="'+a.tk+'">'+a.tk+' — '+a.seg+'</option>'}).join('');
+  document.getElementById('cart-tk').innerHTML='<option value="">Selecione...</option>'+opts;
+  document.getElementById('ia-ativo').innerHTML='<option value="">Selecione um ativo...</option>'+opts;
+}
+
+function addCarteiraRapido(tk){
+  document.getElementById('cart-tk').value=tk;
+  showTab('carteira');
+  document.getElementById('cart-qt').focus();
+}
+
+function addCarteira(){
+  var tk=document.getElementById('cart-tk').value;
+  var qt=parseFloat(document.getElementById('cart-qt').value)||0;
+  var pm=parseFloat(document.getElementById('cart-pm').value)||0;
+  if(!tk||qt<=0||pm<=0){document.getElementById('cart-msg').innerHTML='<span style="color:var(--rd)">Preencha todos os campos.</span>';return}
+  var ativo=ATIVOS.find(function(a){return a.tk===tk});
+  if(!ativo){document.getElementById('cart-msg').innerHTML='<span style="color:var(--rd)">Ativo não encontrado.</span>';return}
+  var existe=CARTEIRA.find(function(c){return c.tk===tk});
+  if(existe){
+    // Média ponderada
+    var totalQt=existe.qt+qt;
+    existe.pm=(existe.pm*existe.qt+pm*qt)/totalQt;
+    existe.qt=totalQt;
+  } else {
+    CARTEIRA.push({tk:tk,qt:qt,pm:pm,seg:ativo.seg});
+  }
+  document.getElementById('cart-msg').innerHTML='<span style="color:var(--gn)">✅ '+tk+' adicionado!</span>';
+  document.getElementById('cart-qt').value='';
+  document.getElementById('cart-pm').value='';
+  renderCarteira();
+}
+
+function removerCarteira(tk){CARTEIRA=CARTEIRA.filter(function(c){return c.tk!==tk});renderCarteira()}
+
+function renderCarteira(){
+  if(CARTEIRA.length===0){
+    document.getElementById('cart-vazia').style.display='block';
+    document.getElementById('cart-conteudo').style.display='none';
+    return;
+  }
+  document.getElementById('cart-vazia').style.display='none';
+  document.getElementById('cart-conteudo').style.display='block';
+
+  var rows=CARTEIRA.map(function(c){
+    var a=ATIVOS.find(function(x){return x.tk===c.tk})||{};
+    var pr=a.pr||c.pm;
+    var totalInv=c.qt*c.pm;
+    var totalAt=c.qt*pr;
+    var lucro=totalAt-totalInv;
+    var varPct=((pr-c.pm)/c.pm)*100;
+    var divAnual=(a.dpa||0)*c.qt;
+    var divMensal=divAnual/12;
+    return{...c,a:a,pr:pr,totalInv:totalInv,totalAt:totalAt,lucro:lucro,varPct:varPct,divAnual:divAnual,divMensal:divMensal};
+  });
+
+  var totInv=rows.reduce(function(s,r){return s+r.totalInv},0);
+  var totAt=rows.reduce(function(s,r){return s+r.totalAt},0);
+  var totLucro=totAt-totInv;
+  var totDivAnual=rows.reduce(function(s,r){return s+r.divAnual},0);
+  var totDivMensal=totDivAnual/12;
+  var dyCart=totAt>0?(totDivAnual/totAt)*100:0;
+
+  document.getElementById('cart-stats').innerHTML=
+    st('Investido','R$ '+fm(totInv),'tl')+st('Atual','R$ '+fm(totAt),'gn')+
+    st('Lucro/Prej.','R$ '+fm(totLucro),totLucro>=0?'gn':'rd')+
+    st('Div.Anual','R$ '+fm(totDivAnual),'yw')+st('Div.Mensal','R$ '+fm(totDivMensal),'yw')+
+    st('DY Carteira',dyCart.toFixed(2)+'%','tl')+st('Ativos',CARTEIRA.length,'or');
+
+  // Gráficos carteira
+  var COLS=['#00b4d8','#06d6a0','#ffd166','#e85d04','#ef476f','#8338ec','#3a86ff','#fb5607','#8ac926','#ff6b6b'];
+  var segMap={};rows.forEach(function(r){segMap[r.seg]=(segMap[r.seg]||0)+r.totalAt});
+  var segs=Object.entries(segMap).sort(function(a,b){return b[1]-a[1]});
+  dc('ch-cart-setor','doughnut',segs.map(function(s){return s[0]}),segs.map(function(s){return+s[1].toFixed(0)}),COLS);
+  db('ch-cart-dy',rows.map(function(r){return r.tk}),rows.map(function(r){return r.a.dy?+r.a.dy.toFixed(2):0}),'#00b4d8','DY%');
+  dc('ch-cart-peso','doughnut',rows.map(function(r){return r.tk}),rows.map(function(r){return+r.totalAt.toFixed(0)}),COLS);
+
+  // Dividendos mensais estimados
+  var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var divMeses=meses.map(function(){return+totDivMensal.toFixed(2)});
+  if(CHS['ch-cart-div'])try{CHS['ch-cart-div'].destroy()}catch(e){}
+  CHS['ch-cart-div']=new Chart(document.getElementById('ch-cart-div'),{type:'bar',
+    data:{labels:meses,datasets:[{label:'R$ Dividendos',data:divMeses,backgroundColor:'rgba(255,209,102,.7)',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#888',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#888',callback:function(v){return'R$'+v}},grid:{color:'#2a2a4a'}}}}});
+
+  // Tabela
+  document.getElementById('tbody-cart').innerHTML=rows.map(function(r){
+    var a=r.a;
+    var bc=a.status==='COMPRA'?'bc':a.status==='NEUTRO'?'bn':'br';
+    return'<tr class="'+(r.varPct>=0?'hlg':'hlr')+'">'+
+    '<td>'+r.tk+'</td><td>'+r.seg+'</td>'+
+    '<td>'+r.qt+'</td><td>R$ '+f(r.pm)+'</td>'+
+    '<td>R$ '+f(r.pr)+'</td>'+
+    '<td><span class="'+(r.varPct>=0?'pos':'neg')+'">'+r.varPct.toFixed(2)+'%</span></td>'+
+    '<td>R$ '+fm(r.totalInv)+'</td><td>R$ '+fm(r.totalAt)+'</td>'+
+    '<td><span class="'+(r.lucro>=0?'pos':'neg')+'">R$ '+fm(r.lucro)+'</span></td>'+
+    '<td>'+fp(a.dy)+'</td><td>R$ '+f(a.dpa)+'</td>'+
+    '<td>R$ '+fm(r.divAnual)+'</td><td>R$ '+fm(r.divMensal)+'</td>'+
+    '<td>R$ '+f(a.pjb)+'</td><td>'+fp(a.mb)+'</td>'+
+    '<td><span class="badge '+bc+'">'+(a.status||'—')+'</span></td>'+
+    '<td><button class="btn-g" style="font-size:10px;color:var(--rd);border-color:var(--rd)" onclick="removerCarteira(\''+r.tk+'\')">✕</button></td></tr>';
+  }).join('');
+}
+
+// ═══ ANÁLISE IA ═══
+function analisarIA(){
+  var tk=document.getElementById('ia-ativo').value;
+  if(!tk){alert('Selecione um ativo.');return}
+  var a=ATIVOS.find(function(x){return x.tk===tk});
+  if(!a){return}
+  var div=document.getElementById('ia-result');
+  div.innerHTML='<div class="ia-loading"><div class="ia-dot">●</div> <div class="ia-dot" style="animation-delay:.2s">●</div> <div class="ia-dot" style="animation-delay:.4s">●</div><br><br>Analisando '+tk+'...</div>';
+  div.classList.add('show');
+
+  setTimeout(function(){
+    // Pontuação Bazin
+    var score=0;var total=0;var alertas=[];var pontos=[];
+    function chk(cond,pts,ok,bad){total+=pts;if(cond){score+=pts;pontos.push('✅ '+ok)}else{alertas.push('⚠️ '+bad)}}
+
+    chk(a.dy>=6,20,'DY ≥ 6% ('+f(a.dy)+'%)','DY abaixo de 6% ('+f(a.dy)+'%) — Dividendo fraco');
+    chk(a.mb>=getMSB(),20,'Margem Bazin ≥ '+getMSB()+'% ('+f(a.mb)+'%)','Sem Margem de Segurança ('+f(a.mb)+'%)');
+    chk(a.pl>0&&a.pl<=15,15,'P/L saudável ('+f(a.pl)+')','P/L fora do ideal ('+f(a.pl)+') — Ideal: 5 a 15');
+    chk(a.payout>0&&a.payout<=80,10,'Payout sustentável ('+f(a.payout)+'%)','Payout elevado ('+f(a.payout)+'%) — Ideal ≤ 80%');
+    chk(a.roe>=15,15,'ROE ≥ 15% ('+f(a.roe)+'%)','ROE baixo ('+f(a.roe)+'%) — Ideal ≥ 15%');
+    chk(!a.divida||a.divida<=3,10,'Endividamento ok ('+f(a.divida)+')','Dívida elevada (Dív/EBIT = '+f(a.divida)+') — Ideal ≤ 3');
+    chk(a.liq>=500000,10,'Liquidez ok ('+fl(a.liq)+')','Liquidez baixa ('+fl(a.liq)+') — Risco de venda');
+
+    var pct=Math.round((score/total)*100);
+    var cor=pct>=70?'var(--gn)':pct>=45?'var(--yw)':'var(--rd)';
+    var rec=pct>=70?'✅ COMPRA — Ativo dentro dos critérios Bazin. Bom momento de entrada.':pct>=45?'⏸ AGUARDAR — Ativo tem alguns pontos positivos mas não atende todos os critérios.':'❌ EVITAR — Ativo não atende os critérios fundamentalistas Bazin.';
+
+    // Preço alvo
+    var precoAlvo=a.pjb*(1-getMSB()/100);
+    var upside=a.pjb>0?((a.pjb-a.pr)/a.pr)*100:0;
+
+    div.innerHTML=
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bd)">'+
+    '<div style="text-align:center"><div style="font-size:36px;font-weight:900;color:'+cor+'">'+pct+'</div><div style="font-size:10px;color:#555">/ 100</div></div>'+
+    '<div><div style="font-size:16px;font-weight:700;color:'+cor+'">'+tk+' — '+a.seg+'</div>'+
+    '<div style="font-size:12px;color:#888;margin-top:4px">'+rec+'</div></div></div>'+
+
+    '<div class="ia-section"><div class="ia-section-title">📊 Indicadores Fundamentalistas</div>'+
+    ia('Preço Atual','R$ '+f(a.pr),'','','')+
+    ia('Preço Justo Bazin','R$ '+f(a.pjb),a.mb>=0?'good':'bad','')+
+    ia('Margem de Segurança',f(a.mb)+'%',a.mb>=getMSB()?'good':a.mb>=0?'warn':'bad')+
+    ia('Upside Potencial',f(upside)+'%',upside>0?'good':'bad')+
+    ia('Preço Alvo Entrada','R$ '+f(precoAlvo),'','')+
+    ia('Dividend Yield',f(a.dy)+'%',a.dy>=6?'good':a.dy>=3?'warn':'bad')+
+    ia('DPA',f(a.dpa),'','')+
+    ia('P/L',f(a.pl),a.pl>0&&a.pl<=15?'good':a.pl>15?'warn':'bad')+
+    ia('P/VP',f(a.pvp),a.pvp<1?'good':a.pvp<2?'warn':'bad')+
+    ia('ROE',f(a.roe)+'%',a.roe>=15?'good':a.roe>=8?'warn':'bad')+
+    ia('Payout',f(a.payout)+'%',a.payout<=80?'good':a.payout<=100?'warn':'bad')+
+    ia('Dív.Líq/EBIT',f(a.divida),!a.divida||a.divida<=3?'good':a.divida<=5?'warn':'bad')+
+    ia('CAGR Lucros 5a',f(a.cagr)+'%',a.cagr>=10?'good':a.cagr>=0?'warn':'bad')+
+    '</div>'+
+
+    '<div class="ia-section"><div class="ia-section-title">✅ Pontos Positivos ('+pontos.length+')</div>'+
+    '<div style="font-size:11px;line-height:2;color:var(--gn)">'+pontos.join('<br>')+'</div></div>'+
+
+    (alertas.length?'<div class="ia-section"><div class="ia-section-title">⚠️ Alertas ('+alertas.length+')</div>'+
+    '<div style="font-size:11px;line-height:2;color:var(--yw)">'+alertas.join('<br>')+'</div></div>':'')+
+
+    '<div class="ia-section"><div class="ia-section-title">🎯 Estratégia Recomendada</div>'+
+    '<div style="font-size:12px;line-height:1.8;color:#bbb;background:#0d0d1a;padding:12px;border-radius:6px">'+
+    (pct>=70?'<b style="color:var(--gn)">Comprar:</b> O ativo está abaixo do preço justo com margem de segurança satisfatória. '+
+    'Preço ideal de entrada: <b style="color:var(--yw)">R$ '+f(precoAlvo)+'</b>. '+
+    'Com DY de '+f(a.dy)+'%, o retorno anual em dividendos é atrativo. '+
+    'Sugerimos entrada parcial e complementar em quedas. Horizonte: mínimo 3 anos.':
+    pct>=45?'<b style="color:var(--yw)">Aguardar:</b> O ativo tem fundamentos razoáveis mas ainda não atingiu o preço ideal. '+
+    'Aguarde o preço chegar a <b style="color:var(--yw)">R$ '+f(precoAlvo)+'</b> para melhor relação risco/retorno.':
+    '<b style="color:var(--rd)">Evitar:</b> O ativo apresenta indicadores abaixo do esperado pelo Método Bazin. '+
+    'Prefira ativos com DY ≥ 6%, P/L entre 5-15 e boa margem de segurança.')+
+    '</div></div>';
+  },1200);
+}
+
+function ia(lbl,val,cls){return'<div class="ia-item"><span class="ia-label">'+lbl+'</span><span class="ia-val '+(cls||'')+'">'+val+'</span></div>'}
+
+function analisarCarteira(){
+  if(CARTEIRA.length===0){alert('Adicione ativos à carteira primeiro.');return}
+  var div=document.getElementById('ia-result');
+  div.innerHTML='<div class="ia-loading"><div class="ia-dot">●</div><div class="ia-dot" style="animation-delay:.2s">●</div><div class="ia-dot" style="animation-delay:.4s">●</div><br><br>Analisando carteira...</div>';
+  div.classList.add('show');
+
+  setTimeout(function(){
+    var rows=CARTEIRA.map(function(c){return{...c,a:ATIVOS.find(function(x){return x.tk===c.tk})||{}}});
+    var totAt=rows.reduce(function(s,r){return s+(r.a.pr||r.pm)*r.qt},0);
+    var divAnual=rows.reduce(function(s,r){return s+(r.a.dpa||0)*r.qt},0);
+    var segs=[...new Set(rows.map(function(r){return r.seg}))];
+    var compras=rows.filter(function(r){return r.a.status==='COMPRA'}).length;
+    var dyCart=totAt>0?(divAnual/totAt)*100:0;
+
+    div.innerHTML=
+    '<div style="font-size:14px;font-weight:700;color:var(--pu);margin-bottom:12px">💼 Análise da Carteira ('+rows.length+' ativos)</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px">'+
+    kpi('Total Investido','R$ '+fm(totAt),'var(--tl)')+kpi('Div.Anual Est.','R$ '+fm(divAnual),'var(--yw)')+
+    kpi('DY Carteira',dyCart.toFixed(2)+'%','var(--gn)')+kpi('Setores',segs.length,'var(--or)')+
+    kpi('Em COMPRA',compras+'/'+rows.length,'var(--gn)')+'</div>'+
+    '<div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Avaliação por Ativo</div>'+
+    rows.map(function(r){
+      var a=r.a;var cor=a.status==='COMPRA'?'var(--gn)':a.status==='NEUTRO'?'var(--yw)':'var(--rd)';
+      return'<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">'+
+      '<span style="font-weight:700;color:#fff;width:60px">'+r.tk+'</span>'+
+      '<span style="color:#666;flex:1;font-size:10px">'+r.seg+'</span>'+
+      '<span style="color:var(--tl)">DY: '+f(a.dy)+'%</span>'+
+      '<span style="color:#888;margin:0 8px">PJB: R$ '+f(a.pjb)+'</span>'+
+      '<span style="color:'+cor+';font-weight:700;font-size:10px">'+(a.status||'—')+'</span></div>';
+    }).join('')+
+    '<div style="margin-top:12px;font-size:12px;color:#888;background:#0d0d1a;padding:12px;border-radius:6px;line-height:1.8">'+
+    '<b style="color:#fff">Diagnóstico:</b> '+
+    (segs.length>=5?'✅ Boa diversificação setorial ('+segs.length+' setores).':'⚠️ Diversificação insuficiente ('+segs.length+' setor(es)). Recomendamos pelo menos 5 setores.')+
+    '<br>'+(dyCart>=6?'✅ DY da carteira acima de 6% ('+dyCart.toFixed(2)+'%). Excelente rendimento de dividendos.':'⚠️ DY da carteira abaixo de 6% ('+dyCart.toFixed(2)+'%). Considere adicionar ativos com maior DY.')+
+    '<br>'+(compras>=rows.length*0.5?'✅ Maioria dos ativos em zona de COMPRA ('+compras+'/'+rows.length+').':'⚠️ Poucos ativos em zona de COMPRA. Revise os ativos CARO/NEUTRO.')+
+    '</div>';
+  },1200);
+}
+
+function kpi(l,v,c){return'<div style="background:#1a1a35;border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;color:#555;text-transform:uppercase">'+l+'</div><div style="font-size:16px;font-weight:800;color:'+c+'">'+v+'</div></div>'}
+
+// ═══ IR ═══
+function calcIR(){
+  var sal=parseFloat(document.getElementById('ir-sal').value)||0;
+  var div=parseFloat(document.getElementById('ir-div').value)||0;
+  var out=parseFloat(document.getElementById('ir-out').value)||0;
+  var irrf=parseFloat(document.getElementById('ir-irrf').value)||0;
+  var alvo=parseFloat(document.getElementById('ir-alvo').value)||5000;
+  var cap=parseFloat(document.getElementById('ir-cap').value)||0;
+
+  if(sal+div+out===0)return;
+
+  var rendaTotal=sal+div+out;
+  var LIMITE_ISENTO=600000;
+  var irDiv=0;var irSobre='';var situacao='';var semaforo='';
+
+  // Cálculo IR conforme proposta
+  if(rendaTotal<=LIMITE_ISENTO){
+    irDiv=0;
+    situacao='Isento';
+    semaforo='ir-verde';
+    irSobre='Sua renda total (R$ '+fm(rendaTotal)+') está abaixo do limite de isenção de R$ 600.000/ano. Dividendos ISENTOS de IR.';
+  } else {
+    // Alíquota progressiva sobre o excedente (simulação)
+    var excedente=rendaTotal-LIMITE_ISENTO;
+    var aliquota=excedente<=200000?0.05:excedente<=400000?0.075:0.10;
+    irDiv=rendaTotal*aliquota-irrf;
+    if(irDiv<0)irDiv=0;
+    situacao=irDiv===0?'Isento com IRRF':'Tributado '+((aliquota*100).toFixed(0))+'%';
+    semaforo=irDiv===0?'ir-verde':irDiv<50000?'ir-amarelo':'ir-vermelho';
+    irSobre='Renda total acima de R$ 600.000. Incide alíquota de '+(aliquota*100).toFixed(0)+'% sobre a renda total, descontando IRRF de R$ '+fm(irrf)+' como crédito.';
+  }
+
+  // Capital necessário para alvo mensal
+  var divAlvoAnual=alvo*12;
+  var dyMedioBazin=0.08; // 8% ao ano
+  var capNecessario=divAlvoAnual/dyMedioBazin;
+  var capFaltante=Math.max(0,capNecessario-cap);
+  var mesesAcumular=capFaltante>0&&alvo>0?Math.ceil(capFaltante/(alvo*0.3)):0;
+
+  document.getElementById('ir-result').style.display='block';
+  document.getElementById('ir-semaforo').innerHTML='<div class="ir-semaforo '+semaforo+'">'+
+    (semaforo==='ir-verde'?'🟢':'semaforo'==='ir-amarelo'?'🟡':'🔴')+
+    (semaforo==='ir-verde'?'🟢 ':semaforo==='ir-amarelo'?'🟡 ':'🔴 ')+
+    irSobre+'</div>';
+
+  document.getElementById('ir-kpis').innerHTML=
+    kpi('Renda Total','R$ '+fm(rendaTotal),'var(--tl)')+
+    kpi('IR s/ Dividendos','R$ '+fm(irDiv),irDiv===0?'var(--gn)':'var(--rd)')+
+    kpi('Situação',situacao,irDiv===0?'var(--gn)':'var(--rd)')+
+    kpi('Capital p/ Alvo','R$ '+fm(capNecessario),'var(--yw)')+
+    kpi('Capital Faltante','R$ '+fm(capFaltante),capFaltante===0?'var(--gn)':'var(--or)')+
+    kpi('Prazo Estimado',mesesAcumular>0?mesesAcumular+' meses':'Meta atingida!',mesesAcumular===0?'var(--gn)':'var(--yw)');
+
+  var estrategias=[];
+  if(rendaTotal>LIMITE_ISENTO){
+    estrategias.push(['Controle a Renda Total','Mantenha sua <b>renda total anual abaixo de R$ 600.000</b> (R$ 50.000/mês). Acima disso incide alíquota progressiva. Planeje distribuição de pro-labore vs dividendos.']);
+    estrategias.push(['Use Holding Familiar','Crie uma <b>Holding PJ</b> para receber dividendos. A empresa pode reinvestir lucros sem tributação imediata na pessoa física.']);
+  } else {
+    estrategias.push(['Aproveitamento da Isenção','Sua renda está na faixa isenta! Você pode receber até <b>R$ '+fm(LIMITE_ISENTO-sal-out)+'/ano em dividendos</b> sem pagar IR.']);
+  }
+  estrategias.push(['Priorize Ações com Bom DY','Foque em ações com <b>DY ≥ 6%</b> dentro do Método Bazin. Empresas lucrativas distribuem dividendos isentos para PF.']);
+  estrategias.push(['IRRF como Crédito','O IRRF pago na fonte (R$ '+fm(irrf)+') se torna <b>crédito dedutível</b> no IRPF. Guarde todos os informes de rendimentos.']);
+  estrategias.push(['Reinvestimento Estratégico','Reinvista os dividendos mensalmente. Ao reinvestir R$ '+fm(div/12)+'/mês com DY médio de 8%, em 10 anos o patrimônio cresce aproximadamente <b>'+Math.round(Math.pow(1+0.08,10)*100-100)+'%</b>.']);
+  estrategias.push(['Diversificação para Reduzir Risco','Distribua entre ≥5 setores: Energia, Bancos, Commodities, Saneamento, Incorporações. Reduz volatilidade e garante dividendos em diferentes ciclos econômicos.']);
+  if(cap>0&&capFaltante===0){
+    estrategias.push(['Meta de Renda Passiva Atingida!','Com R$ '+fm(cap)+' investidos a DY médio de 8%, você gera <b>R$ '+fm(cap*0.08/12)+'/mês</b> em dividendos. Parabéns!']);
+  }
+
+  document.getElementById('ir-estrategias').innerHTML=estrategias.map(function(e,i){
+    return'<div class="ir-e-item"><div class="ir-e-num">'+(i+1)+'</div><div class="ir-e-txt"><b>'+e[0]+':</b> '+e[1]+'</div></div>';
+  }).join('');
+
+  // Gráfico projeção
+  var anos=['Ano 1','Ano 2','Ano 3','Ano 4','Ano 5'];
+  var limIsentos=anos.map(function(){return 600000});
+  var divProj=anos.map(function(_,i){return+(div*Math.pow(1.10,i+1)).toFixed(0)});
+  if(CHS['ch-ir-proj'])try{CHS['ch-ir-proj'].destroy()}catch(e){}
+  CHS['ch-ir-proj']=new Chart(document.getElementById('ch-ir-proj'),{type:'bar',
+    data:{labels:anos,datasets:[
+      {label:'Dividendos Projetados',data:divProj,backgroundColor:'rgba(0,180,216,.7)',borderRadius:3},
+      {label:'Limite Isento R$ 600k',data:limIsentos,type:'line',borderColor:'#ef476f',borderWidth:2,pointRadius:3,fill:false,tension:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#aaa',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#888'},grid:{display:false}},y:{ticks:{color:'#888',callback:function(v){return'R$'+fm(v)}},grid:{color:'#2a2a4a'}}}}});
+
+  // Gráfico composição
+  if(CHS['ch-ir-comp'])try{CHS['ch-ir-comp'].destroy()}catch(e){}
+  CHS['ch-ir-comp']=new Chart(document.getElementById('ch-ir-comp'),{type:'doughnut',
+    data:{labels:['Salário','Dividendos','Outros'],datasets:[{data:[sal,div,out].filter(function(v){return v>0}),backgroundColor:['#00b4d8','#06d6a0','#ffd166'],borderWidth:1,borderColor:'#0d0d1a'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#aaa',font:{size:10},boxWidth:10}}}}});
+}
+
+// ═══ RANKING ═══
+function renderRanking(){
+  var rnks=[
+    {title:'🥇 Maior Margem Bazin',col:'mb',c:'var(--gn)',fil:function(a){return a.status==='COMPRA'},fmt:function(v){return v.toFixed(2)+'%'},asc:false},
+    {title:'💰 Maior DY%',col:'dy',c:'var(--tl)',fil:function(a){return a.dy>0},fmt:function(v){return v.toFixed(2)+'%'},asc:false},
+    {title:'📈 Menor P/L',col:'pl',c:'var(--yw)',fil:function(a){return a.status==='COMPRA'&&a.pl>0},fmt:function(v){return v.toFixed(2)},asc:true},
+    {title:'🏦 Menor P/VP',col:'pvp',c:'var(--or)',fil:function(a){return a.pvp>0&&a.pvp<5},fmt:function(v){return v.toFixed(2)},asc:true},
+  ];
+  document.getElementById('rank-grid').innerHTML=rnks.map(function(rk){
+    var items=[...ATIVOS].filter(rk.fil).sort(function(a,b){return rk.asc?(a[rk.col]||0)-(b[rk.col]||0):(b[rk.col]||0)-(a[rk.col]||0)}).slice(0,20);
+    return'<div class="rc"><div class="rh" style="color:'+rk.c+'">'+rk.title+'</div>'+
+    items.map(function(a,i){return'<div class="rr"><span class="rn">'+(i+1)+'</span><span class="rtk">'+a.tk+'</span><span class="rst">'+a.seg+'</span><span class="rv" style="color:'+rk.c+'">'+rk.fmt(a[rk.col]||0)+'</span></div>';}).join('')+'</div>';
+  }).join('');
+}
+
+// ═══ TABS ═══
+function showTab(id){
+  var tabs=['dashboard','tabela','carteira','ia','ir','ranking'];
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',tabs[i]===id)});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ═══ FORMATOS ═══
+function f(v,d){d=d===undefined?2:d;if(v===null||v===undefined||isNaN(v))return'—';return parseFloat(v).toFixed(d)}
+function fm(v){if(v===null||v===undefined||isNaN(v))return'0,00';var n=Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-':'')+n.replace(/\.(\d{2})$/,',$1')}
+function frs(v){if(!v||isNaN(v))return'—';return'R$ '+f(v)}
+function fp(v){if(v===null||v===undefined||isNaN(v))return'—';var c=v>=0?'pos':'neg';return'<span class="'+c+'">'+parseFloat(v).toFixed(2)+'%</span>'}
+function fl(v){if(!v)return'—';if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(0)+'K';return String(v)}
+
+function exportCSV(){
+  var hdrs='Ticker,Segmento,Preço,PJ Bazin,% Bazin,Status,DY%,P/L,DPA,ROE%,Payout%,VPA,LPA,P/VP';
+  var rows=ATIVOS.map(function(r){return[r.tk,r.seg,r.pr,f(r.pjb),f(r.mb),r.status,f(r.dy),f(r.pl),f(r.dpa),f(r.roe),f(r.payout),f(r.vpa),f(r.lpa),f(r.pvp)].join(',')});
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(hdrs+'\n'+rows.join('\n'));
+  a.download='JBINVEST_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ═══ DADOS BASE ═══
+function getDadosBase(){return[
+  {tk:'CSRN6',seg:'Energia Elétrica',pr:15.50,dpa:1.54,cagr:17.83,roe:36.26,g:19.21,payout:47.02,divida:2.81,vpa:9.06,lpa:3.28,pvp:1.71,roic:18.23,evebit:5.27,liq:0,dy:9.95,pl:4.72},
+  {tk:'POMO4',seg:'Material Rodoviário',pr:6.63,dpa:0.65,cagr:41.24,roe:28.59,g:9.88,payout:65.44,divida:0.95,vpa:3.49,lpa:1.00,pvp:1.96,roic:15.01,evebit:6.02,liq:106490433,dy:9.87,pl:6.87},
+  {tk:'CGRA4',seg:'Tecidos, Vestuário e Calçados',pr:25.80,dpa:2.53,cagr:10.98,roe:-4.16,g:5.53,payout:49.68,divida:-2.55,vpa:46.45,lpa:5.10,pvp:0.59,roic:6.76,evebit:4.39,liq:167947,dy:9.82,pl:5.36},
+  {tk:'CGRA3',seg:'Tecidos, Vestuário e Calçados',pr:25.99,dpa:2.52,cagr:10.98,roe:-4.16,g:5.55,payout:49.43,divida:-2.55,vpa:46.45,lpa:5.10,pvp:0.60,roic:6.76,evebit:4.39,liq:46179,dy:9.70,pl:5.43},
+  {tk:'ROMI3',seg:'Máq. e Equip. Industriais',pr:6.86,dpa:0.66,cagr:3.70,roe:8.70,g:3.95,payout:57.47,divida:4.96,vpa:13.07,lpa:1.14,pvp:0.70,roic:4.76,evebit:13.37,liq:892173,dy:9.55,pl:8.01},
+  {tk:'BBSE3',seg:'Seguradoras',pr:33.95,dpa:3.23,cagr:5.50,roe:89.77,g:23.07,payout:74.30,divida:null,vpa:4.85,lpa:4.35,pvp:8.05,roic:null,evebit:7.99,liq:222028488,dy:9.52,pl:8.96},
+  {tk:'CSED3',seg:'Serviços Educacionais',pr:5.61,dpa:0.53,cagr:3.61,roe:9.81,g:-3.22,payout:132.82,divida:1.00,vpa:18.74,lpa:0.40,pvp:0.98,roic:18.74,evebit:4.08,liq:2720320,dy:9.47,pl:10.03},
+  {tk:'LAVV3',seg:'Incorporações',pr:13.29,dpa:1.23,cagr:50.58,roe:19.67,g:5.82,payout:70.40,divida:-0.30,vpa:8.91,lpa:1.75,pvp:1.20,roic:14.80,evebit:4.94,liq:9988306,dy:9.27,pl:6.08},
+  {tk:'LOGG3',seg:'Exploração de Imóveis',pr:26.31,dpa:2.43,cagr:32.94,roe:10.20,g:4.37,payout:57.13,divida:3.59,vpa:41.80,lpa:4.26,pvp:0.51,roic:8.48,evebit:7.06,liq:4733610,dy:9.25,pl:4.95},
+  {tk:'LEVE3',seg:'Automóveis e Motocicletas',pr:36.05,dpa:3.31,cagr:15.89,roe:70.26,g:12.05,payout:82.85,divida:0.82,vpa:5.69,lpa:3.99,pvp:5.06,roic:38.73,evebit:5.30,liq:10835706,dy:9.17,pl:7.20},
+  {tk:'GRND3',seg:'Calçados',pr:4.45,dpa:0.41,cagr:8.24,roe:18.19,g:9.49,payout:66.98,divida:-1.93,vpa:4.48,lpa:2.23,pvp:1.16,roic:13.62,evebit:6.19,liq:15707413,dy:9.15,pl:6.75},
+  {tk:'BBAS3',seg:'Bancos',pr:22.51,dpa:2.05,cagr:12.21,roe:15.83,g:9.47,payout:40.20,divida:null,vpa:32.15,lpa:5.09,pvp:0.90,roic:null,evebit:5.97,liq:534341366,dy:9.09,pl:5.67},
+  {tk:'BAZA3',seg:'Bancos',pr:85.19,dpa:7.68,cagr:64.26,roe:20.19,g:13.52,payout:33.02,divida:null,vpa:115.26,lpa:23.27,pvp:0.77,roic:null,evebit:3.44,liq:247778,dy:9.02,pl:3.80},
+  {tk:'DIRR3',seg:'Incorporações',pr:13.09,dpa:1.16,cagr:44.74,roe:27.89,g:21.63,payout:31.62,divida:0.02,vpa:12.83,lpa:2.68,pvp:1.90,roic:21.72,evebit:9.80,liq:69890917,dy:8.89,pl:10.18},
+  {tk:'EQPA5',seg:'Energia Elétrica',pr:13.60,dpa:1.20,cagr:35.42,roe:48.25,g:-13.46,payout:127.90,divida:1.08,vpa:1.95,lpa:0.94,pvp:3.83,roic:26.14,evebit:6.32,liq:627,dy:8.84,pl:7.93},
+  {tk:'ITSA4',seg:'Bancos',pr:14.10,dpa:1.24,cagr:7.46,roe:15.56,g:1.36,payout:91.24,divida:0.25,vpa:8.76,lpa:1.36,pvp:1.19,roic:15.31,evebit:7.18,liq:336474512,dy:8.80,pl:7.68},
+  {tk:'ITSA3',seg:'Bancos',pr:13.97,dpa:1.23,cagr:7.46,roe:15.56,g:1.33,payout:90.19,divida:0.25,vpa:8.76,lpa:1.36,pvp:1.20,roic:15.31,evebit:7.18,liq:1273567,dy:8.78,pl:7.69},
+  {tk:'DEXP4',seg:'Petroquímicos',pr:7.50,dpa:0.65,cagr:42.04,roe:15.16,g:7.71,payout:49.15,divida:-0.27,vpa:8.70,lpa:1.32,pvp:0.88,roic:13.03,evebit:3.38,liq:70561,dy:8.65,pl:5.78},
+  {tk:'BRSR6',seg:'Bancos',pr:15.76,dpa:1.36,cagr:-10.53,roe:6.99,g:1.65,payout:76.41,divida:null,vpa:25.48,lpa:1.78,pvp:0.45,roic:null,evebit:6.39,liq:12703584,dy:8.63,pl:6.49},
+  {tk:'EZTC3',seg:'Incorporações',pr:14.64,dpa:1.26,cagr:7.56,roe:8.29,g:2.68,payout:68.96,divida:-1.09,vpa:22.10,lpa:1.83,pvp:0.49,roic:4.93,evebit:9.75,liq:30859708,dy:8.62,pl:7.15},
+  {tk:'CGAS3',seg:'Gás',pr:129.98,dpa:11.17,cagr:16.06,roe:200.70,g:95.45,payout:52.44,divida:2.19,vpa:10.61,lpa:21.29,pvp:11.74,roic:30.61,evebit:7.61,liq:6846,dy:8.59,pl:5.85},
+  {tk:'CGAS5',seg:'Gás',pr:131.30,dpa:11.25,cagr:16.06,roe:200.70,g:94.62,payout:52.85,divida:2.19,vpa:10.61,lpa:21.29,pvp:11.74,roic:30.61,evebit:7.61,liq:84344,dy:8.57,pl:5.99},
+  {tk:'ITUB3',seg:'Bancos',pr:43.79,dpa:3.75,cagr:8.67,roe:18.57,g:0.30,payout:98.38,divida:null,vpa:20.52,lpa:3.81,pvp:1.50,roic:null,evebit:7.41,liq:20432891,dy:8.56,pl:8.07},
+  {tk:'BMIN4',seg:'Bancos',pr:17.55,dpa:1.50,cagr:14.83,roe:5.85,g:0.72,payout:87.65,divida:null,vpa:29.17,lpa:1.71,pvp:0.56,roic:null,evebit:7.28,liq:2711,dy:8.54,pl:9.60},
+  {tk:'PLPL3',seg:'Incorporações',pr:10.65,dpa:0.90,cagr:27.45,roe:37.55,g:17.55,payout:53.25,divida:-0.48,vpa:4.71,lpa:1.41,pvp:1.74,roic:66.05,evebit:3.49,liq:10694985,dy:8.45,pl:7.06},
+  {tk:'CURY3',seg:'Incorporações',pr:30.20,dpa:2.49,cagr:32.33,roe:49.62,g:-5.89,payout:111.86,divida:-0.52,vpa:4.49,lpa:2.23,pvp:6.46,roic:31.79,evebit:9.80,liq:59107419,dy:8.26,pl:13.03},
+  {tk:'EQPA6',seg:'Energia Elétrica',pr:6.59,dpa:0.54,cagr:35.42,roe:48.25,g:20.41,payout:57.70,divida:1.08,vpa:1.95,lpa:0.94,pvp:3.83,roic:26.14,evebit:6.32,liq:0,dy:8.23,pl:8.52},
+  {tk:'EKTR3',seg:'Energia Elétrica',pr:51.52,dpa:4.24,cagr:19.34,roe:48.71,g:8.84,payout:81.86,divida:3.05,vpa:10.63,lpa:5.18,pvp:3.93,roic:17.80,evebit:7.38,liq:683,dy:8.23,pl:8.07},
+  {tk:'CLSC4',seg:'Energia Elétrica',pr:153.99,dpa:12.61,cagr:20.34,roe:19.50,g:6.25,payout:67.95,divida:2.61,vpa:95.18,lpa:18.56,pvp:0.50,roic:12.74,evebit:5.19,liq:408796,dy:8.19,pl:4.38},
+  {tk:'CMIG3',seg:'Energia Elétrica',pr:16.63,dpa:1.35,cagr:17.88,roe:25.99,g:11.86,payout:54.36,divida:1.01,vpa:9.57,lpa:2.49,pvp:1.54,roic:19.26,evebit:4.39,liq:2446180,dy:8.14,pl:5.91},
+  {tk:'RANI3',seg:'Papel e Celulose',pr:8.11,dpa:0.66,cagr:22.84,roe:11.75,g:11.75,payout:48.54,divida:3.23,vpa:5.89,lpa:1.35,pvp:1.35,roic:7.67,evebit:8.84,liq:4867790,dy:8.08,pl:5.92},
+  {tk:'UNIP6',seg:'Químicos',pr:60.70,dpa:5.66,cagr:19.70,roe:19.70,g:-3.00,payout:115.30,divida:1.17,vpa:24.88,lpa:4.91,pvp:1.98,roic:7.76,evebit:10.65,liq:6000000,dy:9.33,pl:11.00},
+  {tk:'VALE3',seg:'Minerais Metálicos',pr:58.20,dpa:6.80,cagr:8.40,roe:28.40,g:4.20,payout:65.00,divida:0.80,vpa:48.20,lpa:7.46,pvp:1.21,roic:22.40,evebit:5.20,liq:1200000000,dy:11.68,pl:7.80},
+  {tk:'PETR4',seg:'Petróleo e Gás',pr:36.20,dpa:5.80,cagr:8.10,roe:28.40,g:5.20,payout:52.00,divida:1.20,vpa:42.80,lpa:8.62,pvp:0.85,roic:18.40,evebit:3.80,liq:980000000,dy:16.02,pl:4.20},
+  {tk:'PETR3',seg:'Petróleo e Gás',pr:37.10,dpa:5.95,cagr:8.20,roe:28.50,g:5.30,payout:52.50,divida:1.20,vpa:43.20,lpa:8.63,pvp:0.86,roic:18.50,evebit:3.80,liq:280000000,dy:16.04,pl:4.30},
+  {tk:'BBDC4',seg:'Bancos',pr:14.90,dpa:0.78,cagr:5.20,roe:13.20,g:4.10,payout:48.00,divida:null,vpa:18.40,lpa:1.38,pvp:0.81,roic:null,evebit:null,liq:380000000,dy:5.24,pl:10.80},
+  {tk:'EGIE3',seg:'Energia Elétrica',pr:44.20,dpa:3.80,cagr:8.20,roe:28.40,g:6.10,payout:75.00,divida:2.10,vpa:18.30,lpa:3.54,pvp:2.41,roic:18.20,evebit:8.30,liq:35000000,dy:8.60,pl:12.50},
+  {tk:'TAEE11',seg:'Energia Elétrica',pr:36.80,dpa:3.20,cagr:9.10,roe:31.20,g:7.20,payout:80.00,divida:1.90,vpa:14.10,lpa:3.41,pvp:2.61,roic:19.80,evebit:7.20,liq:28000000,dy:8.70,pl:10.80},
+  {tk:'WEGE3',seg:'Máquinas e Equipamentos',pr:48.20,dpa:0.85,cagr:22.40,roe:28.40,g:18.80,payout:38.00,divida:-0.40,vpa:14.20,lpa:1.49,pvp:3.39,roic:28.40,evebit:24.20,liq:485000000,dy:1.76,pl:32.40},
+  {tk:'LREN3',seg:'Varejo de Moda',pr:14.20,dpa:0.42,cagr:8.20,roe:22.40,g:6.80,payout:35.00,divida:1.80,vpa:9.20,lpa:0.77,pvp:1.54,roic:15.40,evebit:12.80,liq:185000000,dy:2.96,pl:18.40},
+  {tk:'RENT3',seg:'Locação de Veículos',pr:52.40,dpa:0.35,cagr:18.20,roe:22.40,g:14.80,payout:25.00,divida:3.20,vpa:18.40,lpa:2.88,pvp:2.85,roic:14.20,evebit:14.20,liq:285000000,dy:0.67,pl:18.20},
+  {tk:'ABEV3',seg:'Bebidas',pr:12.80,dpa:0.72,cagr:5.20,roe:18.40,g:4.10,payout:68.00,divida:-0.80,vpa:8.20,lpa:0.84,pvp:1.56,roic:22.40,evebit:12.40,liq:420000000,dy:5.63,pl:15.20},
+  {tk:'SAPR11',seg:'Saneamento',pr:26.80,dpa:2.10,cagr:8.20,roe:18.40,g:6.80,payout:52.00,divida:2.20,vpa:22.40,lpa:3.27,pvp:1.20,roic:12.40,evebit:6.20,liq:28000000,dy:7.84,pl:8.20},
+  {tk:'SBSP3',seg:'Saneamento',pr:82.40,dpa:1.85,cagr:8.20,roe:12.40,g:6.80,payout:28.00,divida:2.80,vpa:58.40,lpa:4.48,pvp:1.41,roic:8.40,evebit:12.40,liq:185000000,dy:2.25,pl:18.40},
+  {tk:'TKNO4',seg:'Artefatos de Aço',pr:216.00,dpa:19.50,cagr:-2.20,roe:15.80,g:-2.20,payout:114.08,divida:-1.60,vpa:108.21,lpa:17.10,pvp:0.72,roic:13.38,evebit:3.12,liq:1200,dy:9.03,pl:4.56},
+  {tk:'KEPL3',seg:'Agronegócio',pr:28.40,dpa:2.20,cagr:22.40,roe:42.40,g:18.40,payout:62.00,divida:-0.40,vpa:12.40,lpa:2.78,pvp:2.29,roic:38.40,evebit:6.80,liq:14000000,dy:7.75,pl:10.20},
+  {tk:'SLCE3',seg:'Agronegócio',pr:18.20,dpa:1.45,cagr:18.40,roe:22.40,g:14.80,payout:52.00,divida:1.20,vpa:18.40,lpa:2.17,pvp:0.99,roic:18.40,evebit:5.20,liq:28000000,dy:7.97,pl:8.40},
+  {tk:'CURY3',seg:'Incorporações',pr:30.20,dpa:2.49,cagr:32.33,roe:49.62,g:-5.89,payout:111.86,divida:-0.52,vpa:4.49,lpa:2.23,pvp:6.46,roic:31.79,evebit:9.80,liq:59107419,dy:8.24,pl:13.03},
+];}
+</script>
+</body>
+</html>
