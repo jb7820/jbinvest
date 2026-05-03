@@ -383,9 +383,9 @@ tbody td:nth-child(2){text-align:left;color:#777;font-size:11px}
 </div>
 
 <script>
-  var SUPABASE_URL = 'https://vwxvpgvpxfidxygjhyec.supabase.co';
-  var SUPABASE_KEY = 'sb_publishable_cFZZ2xyU0yXd9X3oPgM9Lw_lCMweUeL';
-
+var SUPABASE_URL = 'https://vwxvpgvpxfidxygjhyec.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_cFZZ2xyU0yXd9X3oPgM9Lw_lCMweUeL';
+  
 // ═══ AUTH ═══
 var MEMBROS={admin:{senha:'jbinvest2025',nome:'Administrador',role:'admin'},membro1:{senha:'bazin123',nome:'João Silva',role:'membro'},membro2:{senha:'invest456',nome:'Maria Souza',role:'membro'}};
 var EU=null;
@@ -421,8 +421,28 @@ function calcAtivo(a){
 }
 function recalc(){ATIVOS=ATIVOS.map(calcAtivo);renderTudo()}
 
+var SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+var SUPABASE_KEY = 'SUA-ANON-KEY-COMPLETA';
+var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9GG-yd94AmFcCErkjkhDu1ZFm6nquMXGI674hWlNPQB75Juj-wd260xkBcqSM1vsc6pB_S0aT4ABZ/pub?gid=884643772&single=true&output=csv';
+
 async function carregarDados(){
-  ATIVOS=getDadosBase().map(calcAtivo);
+  // Mostrar loading
+  document.getElementById('stats-bar').innerHTML='<div style="color:#555;padding:20px;grid-column:1/-1">🔄 Carregando 280 ativos da planilha...</div>';
+  try {
+    var r = await fetch(CSV_URL);
+    if(!r.ok) throw new Error('Erro HTTP '+r.status);
+    var txt = await r.text();
+    var parsed = parseCSV(txt);
+    if(parsed && parsed.length > 5){
+      ATIVOS = parsed.map(calcAtivo);
+      console.log('✅ '+ATIVOS.length+' ativos carregados da planilha');
+    } else {
+      throw new Error('Dados insuficientes');
+    }
+  } catch(e) {
+    console.warn('Planilha indisponível, usando dados locais:', e);
+    ATIVOS = getDadosBase().map(calcAtivo);
+  }
   renderTudo();
   popularSelects();
 }
