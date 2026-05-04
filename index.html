@@ -383,8 +383,6 @@ tbody td:nth-child(2){text-align:left;color:#777;font-size:11px}
 </div>
 
 <script>
-var SUPABASE_URL = 'https://vwxvpgvpxfidxygjhyec.supabase.co';
-var SUPABASE_KEY = 'sb_publishable_cFZZ2xyU0yXd9X3oPgM9Lw_lCMweUeL';  
 // ═══ AUTH ═══
 var MEMBROS={admin:{senha:'jbinvest2025',nome:'Administrador',role:'admin'},membro1:{senha:'bazin123',nome:'João Silva',role:'membro'},membro2:{senha:'invest456',nome:'Maria Souza',role:'membro'}};
 var EU=null;
@@ -425,23 +423,43 @@ var SUPABASE_KEY = 'SUA-ANON-KEY-COMPLETA';
 var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9GG-yd94AmFcCErkjkhDu1ZFm6nquMXGI674hWlNPQB75Juj-wd260xkBcqSM1vsc6pB_S0aT4ABZ/pub?gid=884643772&single=true&output=csv';
 
 async function carregarDados(){
-  // Mostrar loading
-  document.getElementById('stats-bar').innerHTML='<div style="color:#555;padding:20px;grid-column:1/-1">🔄 Carregando 280 ativos da planilha...</div>';
-  try {
-    var r = await fetch(CSV_URL);
-    if(!r.ok) throw new Error('Erro HTTP '+r.status);
-    var txt = await r.text();
-    var parsed = parseCSV(txt);
-    if(parsed && parsed.length > 5){
-      ATIVOS = parsed.map(calcAtivo);
-      console.log('✅ '+ATIVOS.length+' ativos carregados da planilha');
-    } else {
-      throw new Error('Dados insuficientes');
+  document.getElementById('stats-bar').innerHTML='<div style="color:#555;padding:20px;grid-column:1/-1">🔄 Carregando ativos da planilha...</div>';
+
+  // Tenta 3 métodos diferentes para contornar CORS
+  var urls = [
+    CSV_URL,
+    'https://corsproxy.io/?' + encodeURIComponent(CSV_URL),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_URL),
+    'https://cors-anywhere.herokuapp.com/' + CSV_URL,
+  ];
+
+  var carregou = false;
+  for(var i=0; i<urls.length; i++){
+    try {
+      console.log('Tentando URL '+(i+1)+': '+urls[i].substring(0,60)+'...');
+      var r = await fetch(urls[i], {
+        headers: i>0 ? {'X-Requested-With':'XMLHttpRequest'} : {}
+      });
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var txt = await r.text();
+      if(!txt || txt.length < 100) throw new Error('Resposta vazia');
+      var parsed = parseCSV(txt);
+      if(parsed && parsed.length > 10){
+        ATIVOS = parsed.map(calcAtivo);
+        console.log('✅ '+ATIVOS.length+' ativos carregados via método '+(i+1));
+        carregou = true;
+        break;
+      }
+    } catch(e) {
+      console.warn('Método '+(i+1)+' falhou:', e.message);
     }
-  } catch(e) {
-    console.warn('Planilha indisponível, usando dados locais:', e);
+  }
+
+  if(!carregou){
+    console.warn('Todos os métodos falharam. Usando dados locais.');
     ATIVOS = getDadosBase().map(calcAtivo);
   }
+
   renderTudo();
   popularSelects();
 }
